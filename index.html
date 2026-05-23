@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- ⚠️ iOS PWA最重要：ここのタイトルとメタ名をすべてマニフェストと完全一致させます -->
+    <title>DramaGen192</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DramaGen192">
+    
+    <!-- iOS用のアイコン個別指定（名前は統一） -->
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- アプリ内表示も完全統一 -->
+        <h2>🎬 DramaGen192</h2>
+        <p style="font-size:12px; color:#888;">流出リスクゼロ・補正無しのドラマ素材生成</p>
+        
+        <input type="password" id="apiKey" placeholder="Stability APIキーを入力 (sk-...)">
+        <textarea id="prompt" rows="3" placeholder="英語でプロンプトを入力してください..."></textarea>
+        <button onclick="generateImage()">🍎 192x192で生成開始</button>
+        
+        <div id="status">Ready</div>
+        
+        <div id="canvasContainer">
+            <canvas id="canvas" width="192" height="192"></canvas>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('DramaGen192: Service Worker Registered'));
+        }
+
+        async function generateImage() {
+            const apiKey = document.getElementById('apiKey').value;
+            const promptText = document.getElementById('prompt').value;
+            const statusDiv = document.getElementById('status');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if(!apiKey || !promptText) { alert("キーとプロンプトを入力してください"); return; }
+            statusDiv.innerText = "⏳ Safari純正回線でCloudflareを突破中...";
+
+            const url = "https://stability.ai";
+            const formData = new FormData();
+            formData.append('prompt', promptText);
+            formData.append('output_format', 'png');
+            formData.append('aspect_ratio', '1:1');
+            formData.append('model', 'sd3.5-large');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'image/*' },
+                    body: formData
+                });
+
+                statusDiv.innerText = `📡 応答コード: ${response.status}`;
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const img = new Image();
+                    img.src = URL.createObjectURL(blob);
+                    
+                    img.onload = function() {
+                        ctx.clearRect(0, 0, 192, 192);
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, 192, 192);
+                        statusDiv.innerText = "🎉 生成完了！画像を長押しして「写真に保存」できます。";
+                    };
+                } else {
+                    const errText = await response.text();
+                    statusDiv.innerText = `❌ 拒否されました: ${errText}`;
+                }
+            } catch (error) {
+                statusDiv.innerText = `💥 通信失敗: ${error}`;
+            }
+        }
+    </script>
+</body>
+</html>
