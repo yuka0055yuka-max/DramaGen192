@@ -1,4 +1,4 @@
-// ⚠️ キャッシュ空間の名前も同一に統一
+// ⚠️ キャッシュの名前の引き出しも「DramaGen192」に統一
 const CACHE_NAME = 'DramaGen192-v1';
 const ASSETS = [
   'index.html',
